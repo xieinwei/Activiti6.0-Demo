@@ -1,0 +1,453 @@
+<script type="text/javascript" src="assets/js/custom/client/contract/contractMes/kissBaby/contractWorkflowShowDetails.js"></script>
+<div class="row" id="vueForQY">
+    <div class="col-lg-12 col-sm-12 col-xs-12">
+        <div class="widget flat radius-bordered">
+            <div class="widget-body">
+                <div class="row">
+                    <div class="col-lg-12 ">
+                        <input type="button" class="btn btn-success float-right " value="查看亲幼详情" onclick="joinInformation('${businessKey}')"/>
+                        <input type="button" class="btn btn-success float-right margin-right-10" value="查看合同详情" onclick="toViewContractRelevantDetails('${businessKey}',1)"/>
+                        <h4 style=" padding-left:10px;border-bottom: 1px solid #CCCCCC; padding-bottom: 10px; font-size: 16px; font-weight: bold!important; color: #0c0c0c!important;"
+                            id="checkTitle"></h4>
+                    </div>
+                </div>
+                <div class="row padding-left-20">
+                    <template v-for="(question,index) in questions">
+                        <p class="col-lg-12"> {{index+1}}、{{question.content}}</p>
+                        <div class="col-xs-9 text-align-left margin-left-20">
+                            <div class="check box">
+                                <template v-for="answer in question.answers">
+                                    <!--1：单选:2：多选:3：用户输入-->
+                                    <template v-if="question.type==1">
+                                        <label class="margin-left-10">
+                                            <template v-if="answer.content=='#input#'">
+                                                <input class="inputAnswer" :name="question.id" :questionId="question.id"
+                                                       :answerId="answer.id" type="text"
+                                                       style="width: 100px;">
+                                            </template>
+                                            <template v-else>
+                                                <input :name="question.id" :questionId="question.id"
+                                                       :answerId="answer.id" type="radio">
+                                                <span class="text" style="line-height: 27px;"
+                                                      v-text="answer.content"></span>
+                                            </template>
+                                        </label>
+                                    </template>
+                                    <template v-else-if="question.type==2">
+                                        <label class="margin-left-10">
+                                            <template v-if="answer.content=='#input#'">
+                                                <input class="inputAnswer" :name="question.id" :questionId="question.id"
+                                                       :answerId="answer.id" type="text"
+                                                       style="width: 100px;">
+                                            </template>
+                                            <template v-else>
+                                                <input :name="question.id" :questionId="question.id"
+                                                       :answerId="answer.id" type="checkbox">
+                                                <span class="text" style="line-height: 27px;"
+                                                      v-text="answer.content"></span>
+                                            </template>
+                                        </label>
+                                    </template>
+                                    <template v-else-if="question.type==3">
+                                        <textarea type="text" class="inputAnswer" cols="10" rows="5"
+                                                  :questionId="question.id" :answerId="answer.id"></textarea>
+                                    </template>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+                <div class="row">
+                    <div class="col-lg-12">
+                        <textarea class="col-lg-12" style="resize: none; height: 200px;"
+                                  placeholder="还有啥想说的？写这里吧！" name="remark"></textarea>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-xs-12 col-md-12">
+                        <div class="well with-header with-footer nopadding-left nopadding-right nopadding-bottom padding-top-40 margin-top-10 nomargin-bottom">
+                            <div class="header bordered-success">
+                                审批记录
+                            </div>
+                            <div class="table-scrollable">
+                                <table class="table table-striped table-bordered table-hover" style="font-size: 12px;">
+                                    <thead>
+                                    <tr>
+                                        <th scope="col" style="width: 150px!important;">审批人</th>
+                                        <th scope="col">意见</th>
+                                        <th scope="col" style="width: 200px!important;">审核时间</th>
+                                        <th scope="col" style="width: 50px!important;">审核结果</th>
+                                        <th style="width: 50px!important;">操作</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr v-for="data in contractCheckRecordList">
+                                        <td style="width: 150px!important;" v-text="data.adminUserName"></td>
+                                        <td v-text="data.remark"></td>
+                                        <td style="width: 200px!important;" v-text="data.createTime"></td>
+                                        <td style="width: 50px!important;" v-text="data.result==1?'同意':'驳回'"></td>
+                                        <td style="width: 50px!important;">
+                                            <a class="btn btn-mini btn-success btn-sm"
+                                               @click="showCheckDetails(data.id,data.taskId)">详情</a>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="contractCheckRecordList.length==0">
+                                        <td colspan="4">暂时没有审核记录</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-title"></div>
+                <div class="row">
+                    <div class="col-lg-12 text-align-center" id="submitBtns">
+                        <input type="button" class="btn btn-danger btn-lg" id="checkBtn_bh" value="驳回"
+                               onclick="submitCheck(0)">
+                        <input type="button" class="btn btn-success btn-lg" id="checkBtn_tg" value="通过"
+                               onclick="submitCheck(1)">
+                        <input type="button" class="btn btn-info btn-lg" value="返回"
+                               onclick="javascript:toView('switchView.do?viewPath=sysPage/workflow/taskList.ftl',true,'POST',{pageSize:10})">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <form id="submitCheckForm">
+        <input type="hidden" name="formKey">
+        <input type="hidden" name="formToken">
+        <input type="hidden" name="tableName" value="ums_contract_check_record">
+        <input type="hidden" name="idName" value="id">
+        <input type="hidden" name="idValue" value="${checkRecordId}">
+        <input type="hidden" name="resultJson">
+    </form>
+</div>
+<script>
+    //设置token
+    $("#submitCheckForm [name='formKey']").val(Math.randomStr());
+    $("#submitCheckForm [name='formToken']").val(Math.randomStr());
+
+    //容器Id
+    var checkContainerId = "vueForQY";
+    //审批问题Vue对象
+    var vueForQY = new Vue({
+        el: '#' + checkContainerId,
+        data: {
+            questions: [],
+            checkRecord: {},
+            contractCheckRecordList: []
+        }
+    });
+    //流程定义节点key
+    var taskDefKey = "${taskDefKey}";
+    //流程参数配置
+    var checkConfig = {
+        usertask1: {
+            title: "招商经理审批",
+            questionGroupCode: "1001001_qy",
+            resultKey: "resultForZSJL"
+        },
+        usertask2: {
+            title: "大区经理审批",
+            questionGroupCode: "1001002_qy",
+            resultKey: "resultForDQJL"
+        },
+        usertask3: {
+            title: "亲幼事业部负责人审批",
+            questionGroupCode: "1001003_qy",
+            resultKey: "resultForQYSYBFZR"
+        },
+        usertask4: {
+            title: "总部风控审批",
+            questionGroupCode: "1001004_qy",
+            resultKey: "resultForZBFK"
+        },
+        usertask5: {
+            title: "服务支持部审核批",
+            questionGroupCode: "1001005_qy",
+            resultKey: "resultForFWZCB"
+        },
+        usertask6: {
+            title: "幼儿园督导部审批",
+            questionGroupCode: "1001006_qy",
+            resultKey: "resultForYEYDDB"
+        },
+        usertask7: {
+            title: "亲子督导审批",
+            questionGroupCode: "",
+            resultKey: "resultForQZDDB"
+        },
+        usertask8: {
+            title: "华南方风控审批",
+            questionGroupCode: "",
+            resultKey: "resultForNFFK"
+        },
+        usertask9: {
+            title: "会计审批",
+            questionGroupCode: "",
+            resultKey: "resultForKJ"
+        },
+        usertask11: {
+            title: "财务经理审批",
+            questionGroupCode: "",
+            resultKey: "resultForCWJL"
+        },
+        usertask10: {
+            title: "财务负责人审批",
+            questionGroupCode: "",
+            resultKey: "resultForCWFZR"
+        }
+    };
+
+    //设置标题
+    $("#checkTitle").text(checkConfig[taskDefKey].title);
+
+    //如果是第一个节点，修改提示
+    if (taskDefKey == "usertask1") {
+        $("#checkBtn_bh").val("撤回");
+        $("#checkBtn_tg").val("提审");
+    }
+
+    /**
+     * 加载审核记录
+     * */
+    (function () {
+        var $container = $("#" + checkContainerId);
+        var idValue = $container.find("[name='idValue']").val();//业务表Id
+        if (idValue) {
+            Http.post(PlatformAPI.getUrl("viewContractCheckQyRecordList"), {
+                id: idValue,
+                pageSize: 1
+            }, function (result) {
+                if (result.resCode == 200) {
+                    var data = [];
+                    if (result.data.list && result.data.list.length > 0) {
+                        data = result.data.list[0];
+                    }
+                    vueForQY.checkRecord = data;
+                } else {
+                    logger.error(result.resMsg);
+                }
+            }, function () {
+                logger.error("加载审核记录失败!");
+            }, "json");
+        }
+    })();
+
+    /**
+     * 加来历史审核记录
+     * */
+    (function () {
+        Http.post(PlatformAPI.getUrl("contractCheckRecordList"), {
+            contractId: "${businessKey}"
+        }, function (result) {
+            if (result.resCode == 200) {
+                vueForQY.contractCheckRecordList = result.data;
+            } else {
+                logger.error(result.resMsg);
+            }
+        }, function () {
+            logger.error("加载审核记录失败!");
+        }, "json");
+    })();
+
+    /**
+     * 加载审批问题
+     */
+    (function () {
+        var qestionGroupCodes = checkConfig[taskDefKey].questionGroupCode;//问题分组
+        if (qestionGroupCodes) {
+            var $container = $("#" + checkContainerId);
+            var tableName = $container.find("[name='tableName']").val();//业务表表名
+            var idName = $container.find("[name='idName']").val();//业务表主键字段名
+            var idValue = $container.find("[name='idValue']").val();//业务表Id
+            Http.post(PlatformAPI.getUrl("getQuestions"), {
+                tableName: tableName,
+                idName: idValue,
+                idValue: idName,
+                qestionGroupCodes: qestionGroupCodes
+            }, function (result) {
+                if (result.data) {
+                    var questionsGreoup = result.data;
+                    if ($.isArray(questionsGreoup) && questionsGreoup.length > 0) {
+                        var questions = questionsGreoup[0].questions;
+                        vueForQY.questions = questions;
+                    }
+                }
+            }, function () {
+                logger.error("加载问答信息失败!")
+            }, 'json');
+        }
+    })();
+
+    /**
+     * 禁用提交按钮
+     * */
+    function disabledSubmitBtns() {
+        $("#submitBtns input").attr("disabled", true);
+    }
+
+    /**
+     * 启用提交按钮
+     * */
+    function enableSubmitBtns() {
+        $("#submitBtns input").attr("disabled", false);
+    }
+
+    /**
+     * 查看加盟申请
+     * */
+    function joinInformation(contractId) {
+        var qy = {};
+        if (contractId) {
+            Http.post(PlatformAPI.getUrl("getQYAboutInfosByContractId"), {
+                contractId: contractId
+            }, function (result) {
+                if (result) {
+                    var resultObj = eval("(" + result + ")");
+                    qy = resultObj.data;
+                }
+                var id = qy.id;
+                var joinApplyId = qy.joinApplyId;
+                Http.get(ctx + "/switchView.do?viewPath=sysPage/ums/contract/contractMes/kissBaby/joinInformation.ftl", {
+                    id: id,
+                    joinApplyId: joinApplyId,
+                    contractId: contractId
+                }, function (html) {
+                    bootbox.dialog({
+                        message: html,
+                        title: "加盟信息",
+                        className: 'customer-modal customer-modal-width-80',
+                        buttons: {}
+                    });
+                }, function () {
+                    logger.error("加载详情界面失败!");
+                }, "html");
+            });
+        } else {
+            alert("合同亲幼id有误，请稍后再试");
+        }
+    }
+
+    function showCheckDetails(checkRecordId, taskId) {
+        var taskDefKey;
+        Http.getSync(ctx + "/service/history/historic-task-instances/" + taskId, null, function (res) {
+            if (res) {
+                taskDefKey = res.taskDefinitionKey;
+            }
+        }, function () {
+            logger.error("查询历史任务节点失败!");
+        }, "json");
+        Http.get(ctx + "/switchView.do?viewPath=sysPage/workflow/checkHistory/contractCheckHistoryDetails.ftl", {
+            title: checkConfig[taskDefKey].title,
+            checkRecordId: checkRecordId,
+            qestionGroupCodes: checkConfig[taskDefKey].questionGroupCode
+        }, function (html) {
+            bootbox.dialog({
+                message: html,
+                title: "审批详情",
+                className: 'bigModal'
+            });
+        }, function () {
+            logger.error("加载详情界面失败!");
+        }, "html");
+    }
+
+    /**
+     * 提交审核,所有请求采用同步请求形式，避免审批人员多次点击提交按钮，导致重复提交审批结果
+     * @param checkResult 审核结果(0:驳回，1:通过)
+     */
+    function submitCheck(checkResult) {
+        //禁用提交按钮，防止多次点击
+        disabledSubmitBtns();
+        var $container = $("#" + checkContainerId);
+        var remark = $container.find("[name='remark']").val();//审核备注
+        //流程实例Id
+        var processInstanceId = "${processInstanceId}";
+        //合同Id
+        var contractId = "${businessKey}";
+        //formkey/formToken
+        var formKey = $("#submitCheckForm [name='formKey']").val();
+        var formToken = $("#submitCheckForm [name='formToken']").val();
+        //保存审核记录
+        Http.postSync(PlatformAPI.getUrl("addCheckRecord"), {
+            formKey: formKey,
+            formToken: formToken,
+            processId: processInstanceId,
+            contractId: contractId,
+            taskId: "${taskId}",
+            result: checkResult,
+            remark: remark,
+            isReject: taskDefKey == "usertask1" && checkResult == 0,
+            isGenSchool: (taskDefKey == "usertask10" && checkResult == 1)
+        }, function (res) {
+            if (res.resCode == 200) {
+                $container.find("[name='idValue']").val(res.data.id);
+                //保存审核结果
+                var tableName = $container.find("[name='tableName']").val();//业务表表名
+                var idName = $container.find("[name='idName']").val();//业务表主键字段名
+                var idValue = $container.find("[name='idValue']").val();//业务表Id
+                //存放所有的結果
+                var resultArray = new Array();
+                //组装结果
+                var $checkedRadioAndCheckBox = $container.find(":checkbox:checked,:radio:checked,.inputAnswer");//选中的单选和多选按钮以及所有输入框
+                $checkedRadioAndCheckBox.each(function (index, item) {
+                    var $item = $(item);
+                    var questionId = $item.attr("questionId");//问题id
+                    var answerId = $item.attr("answerId"); //答案id
+                    var type = $item.attr("type");
+                    type = type == "radio" ? 1 : (type == "checkbox" ? 2 : 3);
+                    var inputText = $item.val();//输入结果
+                    var result = {
+                        type: type,
+                        questionId: questionId,
+                        answerId: answerId,
+                        inputText: inputText,
+                        tableName: tableName,
+                        idValue: idValue,
+                        idName: idName
+                    };
+                    resultArray.push(result);
+                });
+                var resultJson = JSON.stringify(resultArray);
+                //设置结果
+                $container.find("#submitCheckForm [name='resultJson']").val(resultJson);
+                //发送保存填写结果的请求
+                Http.postSync(PlatformAPI.getUrl("addQuestionsResults"), $container.find("#submitCheckForm").serializeArray(), function (res1) {
+                    var resMsg = res1.resMsg;
+                    if (res1.resCode == 200) {
+                        logger.info(resMsg);
+                        var message = (checkResult == 1 ? "通过" : "驳回") + "(" + remark + ")";//审批结果
+                        var params = {
+                            taskId: "${taskId}",
+                            message: message
+                        };
+                        params[checkConfig[taskDefKey].resultKey] = (checkResult == 1 ? true : false);//审核结果
+                        Http.postSync("activiti/complete.do", params, function (res) {
+                            if (res.resCode == 200) {//审批完成
+                                logger.info(res.resMsg);
+                            } else {
+                                logger.error(res.resMsg);
+                            }
+                        }, function () {
+                            logger.error("结束流程失败,请稍后再试!")
+                        }, "json");
+                        // 审批结果保存完成回到待审批流程列表
+                        toView('switchView.do?viewPath=sysPage/workflow/taskList.ftl', true, 'POST', {pageSize: 20})
+                    } else {
+                        logger.error(resMsg);
+                    }
+                }, function () {
+                    logger.error("保存审核结果失败!");
+                }, "json");
+            } else {
+                logger.error("保持审核结果失败，请稍后再试!")
+            }
+            //启用提交按钮按钮
+            enableSubmitBtns();
+        }, function () {
+            logger.error("保存审核记录失败!");
+        }, "json");
+    }
+</script>

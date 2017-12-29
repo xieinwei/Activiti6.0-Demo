@@ -1,0 +1,146 @@
+<div class="row" id="vueForQY">
+    <div class="col-lg-12 col-sm-12 col-xs-12">
+        <div class="widget flat radius-bordered">
+            <div class="widget-body">
+                <div class="row">
+                    <div class="col-lg-12 ">
+                        <h4 style=" padding-left:10px;border-bottom: 1px solid #CCCCCC; padding-bottom: 10px; font-size: 16px; font-weight: bold!important; color: #0c0c0c!important;" id="checkTitle"></h4>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-lg-12">
+                        <textarea class="col-lg-12" style="resize: none; height: 200px;"  placeholder="还有啥想说的？写这里吧！" name="remark"></textarea>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-xs-12 col-md-12">
+                        <div class="well with-header with-footer nopadding-left nopadding-right nopadding-bottom padding-top-40 margin-top-10 nomargin-bottom">
+                            <div class="header bordered-success">
+                                审批记录
+                            </div>
+                            <div class="table-scrollable">
+                                <table class="table table-striped table-bordered table-hover" style="font-size: 12px;">
+                                    <thead>
+                                    <tr>
+                                        <th scope="col" style="width: 150px!important;">审批人</th>
+                                        <th scope="col">意见</th>
+                                        <th scope="col" style="width: 200px!important;">审核时间</th>
+                                        <th scope="col" style="width: 50px!important;">审核结果</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr v-for="data in historys">
+                                        <td style="width: 150px!important;" v-text="data.author"></td>
+                                        <td v-text="data.message"></td>
+                                        <td style="width: 200px!important;" v-text="data.task.startTime"></td>
+                                        <td style="width: 50px!important;" v-text="data.result"></td>
+                                    </tr>
+                                    <tr v-if="historys.length==0">
+                                        <td colspan="4">暂时没有审核记录</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-title"></div>
+                <div class="row">
+                    <div class="col-lg-12 text-align-center" id="submitBtns">
+                        <input type="button" class="btn btn-danger btn-lg" id="checkBtn_bh" value="驳回"
+                               onclick="submitCheck(0)">
+                        <input type="button" class="btn btn-success btn-lg" id="checkBtn_tg" value="通过"
+                               onclick="submitCheck(1)">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+    //流程定义节点key
+    var taskDefKey = "${taskDefKey}";
+    //流程参数配置
+    var checkConfig = {
+        usertask1: {
+            title: "亲子督导负责人",
+            resultKey: "resultForQZDDFZR"
+        },
+        usertask3: {
+            title: "服务支持负责人",
+            resultKey: "resultForYEDDFZR"
+        },
+        usertask4: {
+            title: "幼儿督导负责人",
+            resultKey: "resultForYEDDFZR"
+        },
+        usertask5: {
+            title: "亲幼事业部负责人",
+            resultKey: "resultForQYSYBFZR"
+        },
+        usertask6: {
+            title: "会计",
+            resultKey: "resultForKJ"
+        },
+        usertask7: {
+            title: "财务经理",
+            resultKey: "resultForCWJL"
+        },
+        usertask8: {
+            title: "财务负责人",
+            resultKey: "resultForCWFZR"
+        },
+        usertask9: {
+            title: "法务负责人",
+            resultKey: "resultForFW"
+        }
+    };
+
+    //设置标题
+    $("#checkTitle").text(checkConfig[taskDefKey].title);
+
+    //加来历史审核记录
+    loadHistoryComments("vueForQY", "${processInstanceId}");
+
+    /**
+     * 禁用提交按钮
+     * */
+    function disabledSubmitBtns() {
+        $("#submitBtns input").attr("disabled", true);
+    }
+
+    /**
+     * 启用提交按钮
+     * */
+    function enableSubmitBtns() {
+        $("#submitBtns input").attr("disabled", false);
+    }
+
+    /**
+     * 提交审核,所有请求采用同步请求形式，避免审批人员多次点击提交按钮，导致重复提交审批结果
+     * @param checkResult 审核结果(0:驳回，1:通过)
+     */
+    function submitCheck(checkResult) {
+        //禁用提交按钮，防止多次点击
+        disabledSubmitBtns();
+        var $container = $("#vueForQY");
+        var remark = $container.find("[name='remark']").val();//审核备注
+        var message = (checkResult == 1 ? "通过" : "驳回") + "(" + remark + ")";//审批结果
+        var params = {
+            taskId: "${taskId}",
+            message: message
+        };
+        params[checkConfig[taskDefKey].resultKey] = (checkResult == 1 ? true : false);//审核结果
+        Http.postSync("activiti/complete.do", params, function (res) {
+            if (res.resCode == 200) {//审批完成
+                logger.info(res.resMsg);
+            } else {
+                logger.error(res.resMsg);
+            }
+        }, function () {
+            logger.error("结束流程失败,请稍后再试!")
+        }, "json");
+        // 审批结果保存完成回到待审批流程列表
+        toView('switchView.do?viewPath=sysPage/workflow/taskList.ftl', true, 'POST', {pageSize: 20})
+    }
+</script>
